@@ -1,0 +1,95 @@
+name: Build and Release
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  build-and-release:
+    if: >
+      github.event.pull_request.merged == true && 
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref != 'build-and-release'    
+    runs-on: ubuntu-latest
+    env:
+      GIT_AUTHOR_NAME: "GitHub Actions"
+      GIT_AUTHOR_EMAIL: "actions@github.com"
+      VERSION_BUMP: patch
+
+    steps:
+      # Checkout do código
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Configurar Node.js (ou sua stack)
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # Certifique-se de que o diretório do Git está limpo antes de continuar
+      - name: Ensure Git working directory is clean
+        run: |
+          git checkout main
+          git pull origin main
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Commit untracked changes [skip ci]"
+
+      # Configure user identity for git
+      - name: Configure Git user
+        run: |
+          git config --global user.name "${{ env.GIT_AUTHOR_NAME }}"
+          git config --global user.email "${{ env.GIT_AUTHOR_EMAIL }}"
+
+      # Determine version bump type from labels
+      - name: Determine version bump
+        id: determine_bump
+        run: |
+          if [[ "$(jq -r '.pull_request.labels[].name' $GITHUB_EVENT_PATH)" == *"major"* ]]; then
+            echo "VERSION_BUMP=major" >> $GITHUB_ENV
+          elif [[ "$(jq -r '.pull_request.labels[].name' $GITHUB_EVENT_PATH)" == *"minor"* ]]; then
+            echo "VERSION_BUMP=minor" >> $GITHUB_ENV
+          elif [[ "$(jq -r '.pull_request.labels[].name' $GITHUB_EVENT_PATH)" == *"patch"* ]]; then
+            echo "VERSION_BUMP=patch" >> $GITHUB_ENV
+          else
+            echo "VERSION_BUMP=patch" >> $GITHUB_ENV
+          fi
+
+      # Bump version based on label
+      - name: Bump version
+        id: bump_version
+        run: |
+          npm version ${{ env.VERSION_BUMP }} --no-commit-hooks
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          # O commit já foi feito pelo npm version, então apenas faça o push
+          git push origin main
+
+      # Instalar dependências
+      - name: Install dependencies
+        run: npm install
+
+      # Commit and push changes
+      - name: Push version changes
+        run: |
+          git checkout main
+          git pull origin main          
+          npm run build
+          git add -f dist/
+          git commit -am "Bump version to ${{ env.VERSION }}"
+          git push origin
+          # Verifique se a tag já existe
+          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
+            echo "Tag v${{ env.VERSION }} already exists, skipping tag creation."
+          else
+            git tag "v${{ env.VERSION }}"
+            git push origin "v${{ env.VERSION }}"
+          fi          
+      
+      # Create GitHub Release
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ env.VERSION }}" --title "Release ${{ env.VERSION }}" --notes "Automatically generated release." --target main
