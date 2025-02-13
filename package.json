@@ -1,36 +1,54 @@
 {
-  "name": "lib-ctt",
-  "version": "1.2.0",
-  "description": "",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist/**/*"
-  ],
-  "exports": {
-    ".": "./dist/index.js"
-  },
-  "scripts": {
-    "start": "node dist/index.js",
-    "build": "rm -rf dist && tsc",
-    "dev": "ts-node src/index.ts",
-    "dev:auto": "concurrently \"pnpm run build --watch\" \"pnpm run start\""
-  },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/node": "^22.10.2",
-    "concurrently": "^9.1.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
-  },
-  "dependencies": {
-    "dayjs": "^1.11.13",
-    "express": "^4.21.2"
-  },
-  "peerDependencies": {
-    "dayjs": "^1.11.13",
-    "express": "^4.21.2"
-  }
+    "name": "lib-ctt",
+    "version": "1.2.0",
+    "description": "",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist/**/*"
+    ],
+    "exports": {
+        ".": "./dist/index.js"
+    },
+    "scripts": {
+        "start": "node dist/index.js",
+        "build": "rm -rf dist && tsc",
+        "lint:fix": "pnpm eslint --fix",
+        "prettier:fix": "pnpm prettier . --write",
+        "format": "pnpm lint:fix && pnpm prettier:fix",
+        "dev": "ts-node src/index.ts",
+        "dev:auto": "concurrently \"pnpm run build --watch\" \"pnpm run start\"",
+        "commit": "git-cz"
+    },
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@commitlint/cli": "^19.7.1",
+        "@commitlint/config-conventional": "^19.7.1",
+        "@eslint/js": "^9.20.0",
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.10.2",
+        "commitizen": "^4.3.1",
+        "concurrently": "^9.1.2",
+        "cz-conventional-changelog": "^3.3.0",
+        "eslint": "^9.20.1",
+        "eslint-config-prettier": "^10.0.1",
+        "prettier": "^3.5.1",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.7.3",
+        "typescript-eslint": "^8.24.0"
+    },
+    "dependencies": {
+        "dayjs": "^1.11.13",
+        "express": "^4.21.2"
+    },
+    "peerDependencies": {
+        "dayjs": "^1.11.13",
+        "express": "^4.21.2"
+    },
+    "config": {
+        "commitizen": {
+            "path": "cz-conventional-changelog"
+        }
+    }
 }
